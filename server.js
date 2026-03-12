@@ -9,11 +9,28 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+let CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+
+// Remove trailing slash from CORS_ORIGIN if present
+if (CORS_ORIGIN && CORS_ORIGIN.endsWith('/')) {
+  CORS_ORIGIN = CORS_ORIGIN.slice(0, -1);
+}
 
 // Middleware
 app.use(cors({
-  origin: CORS_ORIGIN,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    // Remove trailing slash from origin for comparison
+    const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+    const normalizedCors = CORS_ORIGIN.endsWith('/') ? CORS_ORIGIN.slice(0, -1) : CORS_ORIGIN;
+    
+    if (normalizedCors === '*' || normalizedCors === normalizedOrigin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
