@@ -1,4 +1,5 @@
 import express from 'express';
+import { body, validationResult } from 'express-validator';
 import Job from '../models/Job.js';
 
 const router = express.Router();
@@ -38,8 +39,22 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST new job
-router.post('/', async (req, res) => {
-  const job = new Job({
+router.post(
+  '/',
+  [
+    body('title').notEmpty().withMessage('Title is required'),
+    body('company').notEmpty().withMessage('Company is required'),
+    body('location').notEmpty().withMessage('Location is required'),
+    body('category').isIn(['Design', 'Sales', 'Marketing', 'Finance', 'Technology', 'Engineering', 'Business', 'Human Resource']).withMessage('Invalid category'),
+    body('description').notEmpty().withMessage('Description is required'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const job = new Job({
     title: req.body.title,
     company: req.body.company,
     location: req.body.location,
@@ -53,6 +68,44 @@ router.post('/', async (req, res) => {
   try {
     const newJob = await job.save();
     res.status(201).json(newJob);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// UPDATE job
+router.put(
+  '/:id',
+  [
+    body('title').notEmpty().withMessage('Title is required'),
+    body('company').notEmpty().withMessage('Company is required'),
+    body('location').notEmpty().withMessage('Location is required'),
+    body('category').isIn(['Design', 'Sales', 'Marketing', 'Finance', 'Technology', 'Engineering', 'Business', 'Human Resource']).withMessage('Invalid category'),
+    body('description').notEmpty().withMessage('Description is required'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+    const job = await Job.findByIdAndUpdate(
+      req.params.id,
+      {
+        title: req.body.title,
+        company: req.body.company,
+        location: req.body.location,
+        category: req.body.category,
+        description: req.body.description,
+        type: req.body.type,
+        tags: req.body.tags,
+        companyLogo: req.body.companyLogo,
+      },
+      { new: true }
+    );
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+    res.json(job);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

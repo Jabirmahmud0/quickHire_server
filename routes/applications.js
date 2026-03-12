@@ -4,6 +4,16 @@ import Application from '../models/Application.js';
 
 const router = express.Router();
 
+// GET all applications
+router.get('/', async (req, res) => {
+  try {
+    const applications = await Application.find().populate('job_id').sort({ created_at: -1 });
+    res.json(applications);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // POST new application
 router.post(
   '/',
@@ -36,5 +46,16 @@ router.post(
     }
   }
 );
+
+// DELETE application
+router.delete('/:id', async (req, res) => {
+  try {
+    const application = await Application.findByIdAndDelete(req.params.id);
+    if (!application) return res.status(404).json({ message: 'Application not found' });
+    res.json({ message: 'Application deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 export default router;
